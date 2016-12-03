@@ -5,10 +5,28 @@
 #include <string>
 #include <vector> // подключаем модель Векторов
 #include <algorithm>
+#include <math.h>
 #include "char_new.cpp"
 #include "char_newSF.cpp"
 using namespace std;
 
+ vector<bool> DecToBin(int number) {
+    vector<bool> result(8, false);
+    int i = 0;
+    do
+    {
+        if ( (number & 1) == 0 )
+            result[i] =  0;
+        else
+            result[i] =  1;
+
+        number >>= 1;
+        i++;
+    } while ( number );
+
+    reverse(result.begin(), result.end());
+    return result;
+}
 
 SymbolCode::SymbolCode( char in_symbol, int in_frequency ) {
     symbol = in_symbol;
@@ -33,14 +51,12 @@ void SymbolCode::addCode( string in_code ) {
 }
 
 
-struct MyCompare
-{
+struct MyCompare {
     bool operator()(const Node* l, const Node* r) const { return l->a < r->a; }
 };
 
 vector<bool> code;
 map<char,vector<bool> > table;
-
 void printSymbolCode( SymbolCode in_symbol ) {
      cout << "Symbol: " << in_symbol.getSymbol();
      cout << " Freq: " << in_symbol.getFrequency();
@@ -50,8 +66,7 @@ void printSymbolCode( SymbolCode in_symbol ) {
 // вектор символов для алгоритма Шенона-Фано
 vector<SymbolCode> symbol;
 
-void BuildTable(Node *root)
-{
+void BuildTable(Node *root) {
     if (root->left!=nullptr)
     { code.push_back(0);
         BuildTable(root->left);}
@@ -64,8 +79,8 @@ void BuildTable(Node *root)
 
     code.pop_back();
 }
-int str2int(string s)
-{
+
+int str2int(string s) {
     int n = 0;
     for(int i = s.length(); i > 0; i--)
     {
@@ -79,7 +94,7 @@ void archivingHof(string path){
     //получение доступа к файлу
     path += ".txt";
     ifstream f(path, ios::in);
-
+    // map для частотной таблицы
     map<char,int> m;
 
 
@@ -87,10 +102,8 @@ void archivingHof(string path){
     char c;
     int i = 0;
     while (f >> noskipws >> c) {
-        if(i > 2) {
             m[c]++;
             cout << c;
-        }
         i++;
     }
 
@@ -119,26 +132,92 @@ void archivingHof(string path){
 
     Node *root = t.front();
     BuildTable(root);
-    f.clear(); f.seekg(0);
+    f.clear();
+    f.seekg(0);
+
+
+    // Utility variable to
+    // control the size of byte
+    int byte_count = 0;
+
+    // Utility variable
+    // to imitate byte
+    char byte = 0;
 
     ofstream g("output.haff", ios::out | ios::binary);
-    g<< table.size();
-    cout<<table.size();
-    for(map<char, vector<bool> >::iterator itr=table.begin(); itr != table.end(); ++itr){
-        g<< itr->first;
-        cout<< itr->first<<endl;
-        vector<bool> x = table[itr->first];
-        char buf = 0;
-        for(int n=0; n<x.size(); n++)
-        {
-            buf = buf | x[n];
+    unsigned int table_len = table.size();
+    g.write((char *) &table_len, sizeof(unsigned int));
+    //запись в файл
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+        g.write((char*) &itr->first, sizeof(char));
+        cout << itr->first << ' ';
+    }
+    cout << endl;
+    int num_of_bit = 0;
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+        short l = itr->second.size();
+        cout << l << ' ';
+        num_of_bit += l;
+        g.write((char *) &l, sizeof(short));
+    }
+    cout <<num_of_bit << endl;
+    vector<bool> vec_of_bool;
+    int len_for_vec = (num_of_bit / 8) + ((num_of_bit % 8) > 0 ? 1 : 0);
+    vector<char> vec_of_ch(len_for_vec);
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+
+        for (int i = 0; i < itr->second.size(); ++i) {
+            cout<< itr->second[i];
+            vec_of_bool.push_back(itr->second[i]);
 
         }
-        g<< buf;
-        cout<<buf;
     }
-    //запись в файл
-    int count=0; char buf=0;
+    cout << endl;
+    cout << vec_of_ch.size() << endl;
+    int flag = 0;
+    char tb = 0;
+    vector<bool> ch(8, false);
+    for(int i = 0; i < num_of_bit; i++){
+        ch[flag] = vec_of_bool[i];
+        flag++;
+        if(flag == 8){
+            for(int i1 = 0; i1 < 8; i1++){
+                cout << ch[i1];
+                int num = 0;
+                if(ch[i1]){
+                    num = 1;
+                }
+                else{
+                    num = 0;
+                }
+                tb += num * pow(2, 7-i1);
+            };
+            cout << ' ' << tb << ' ';
+            g.write((char*) &tb, sizeof(char));
+            flag = 0;
+            ch = vector<bool>(8, false);
+            tb = 0;
+        };
+
+    }
+    if(flag != 0){
+        for(int i = 0; i < ch.size(); i++){
+            cout << ch[i];
+            int num = 0;
+            if(ch[i]){
+                num = 1;
+            }
+            else{
+                num = 0;
+            }
+            tb += num * pow(2, 7-i);
+        }
+        cout << ' ' << tb << ' ';
+        g.write((char*) &tb, sizeof(char));
+    }
+    /*
+    int count = 0;
+    char buf = 0;
     // проходимся по файлу f
     while (!f.eof())
         //берем каждый символ из f
@@ -146,13 +225,23 @@ void archivingHof(string path){
         vector<bool> x = table[c];
         for(int n=0; n<x.size(); n++)
             // записываем биты в char
-        {buf = buf | x[n]<<(7-count);
+        {buf = buf | (x[n]=='1'?1:0)<<(7-count);
             count++;
             //если записали больше 8 то выходим
             if (count==8) { count=0;   g << buf; buf=0; }
         }
     }
     cout<< endl;
+
+    // Write the
+    // last byte
+    if (byte_count != 0) {
+        for (int i = 0; i < 8 - byte_count; ++i) {
+            byte = byte | 0 << (7 - byte_count);
+        }
+        g.write(&byte, sizeof(char));
+    }
+     */
     f.close();
     g.close();
 
@@ -160,8 +249,85 @@ void archivingHof(string path){
 }
 
 void dearchivingHof(){
+    ifstream f ("output.haff", ios::binary);
+    unsigned int len;
+    map<char, vector<bool>> m;
+    f.read((char*)&len, sizeof(unsigned int));
+    cout << endl;
+    cout << len << endl;
+    vector<char> all_ch;
+    for(int i = 0; i < len; i++){
+        char c;
+        f.read((char*)&c, sizeof(char));
+        cout << c << ' ';
+        all_ch.push_back(c);
+
+    }
+    cout << endl;
+    long num_of_b = 0;
+    vector<short> len_of_codes;
+    for(int i = 0; i < len; i++){
+        short s;
+        f.read((char*)&s, sizeof(short));
+        len_of_codes.push_back(s);
+        num_of_b += s;
+        cout<< s << ' ';
+    }
+    cout << endl;
+    int len_for_vec = (num_of_b / 8) + ((num_of_b % 8) > 0 ? 1 : 0);
+    vector<char> vec_of_ch(len_for_vec);
+    for(int i = 0; i < len_for_vec; i++){
+         f.read((char*)&vec_of_ch[i], sizeof(char));
+    }
+    vector<bool> vec_all_b;
+    for(int i = 0; i < len_for_vec; i++){
+        cout << vec_of_ch[i] << ' ';
+        int num_of_ch = +vec_of_ch[i];
+        if(num_of_ch > 0){
+            cout << num_of_ch << ' ';
+            vector<bool> arr = DecToBin(num_of_ch);
+            for(int i1 = 0; i1 < arr.size(); i1++){
+                cout << arr[i1];
+                vec_all_b.push_back(arr[i1]);
+            }
+        }
+        else{
+            cout << 256 + num_of_ch << ' ';
+            vector<bool> arr = DecToBin(256 + num_of_ch);
+            for(int i1 = 0; i1 < arr.size(); i1++){
+                cout << arr[i1];
+                vec_all_b.push_back(arr[i1]);
+            }
+        }
+        cout << endl;
+
+    }
+    for(int i = 0; i < vec_all_b.size(); i++){
+        cout << vec_all_b[i];
+    }
+    vector<vector<bool> > all_codes;
+    for(int i = 0; i < len_of_codes.size(); i++){
+        int code = len_of_codes[i];
+        vector<bool> arr;
+        for(int i1 = 0; i1 < code; i1++){
+            arr.push_back(vec_all_b[0]);
+            vec_all_b.erase(vec_all_b.begin());
+        }
+        all_codes.push_back(arr);
+    }
+    cout << endl;
+    for(int i = 0; i < all_codes.size(); i++)
+    {
+        cout << all_ch[i] << ' ';
+        cout << all_codes[i].size() << ' ';
+        for(int i1 = 0; i1 < all_codes[i].size(); i1++){
+            cout << all_codes[i][i1];
+        }
+        cout << endl;
+    }
     return ;
 }
+
 void shannonFano( int in_begin, int in_end ) {
      // not a valid parameters input
      if ( in_begin >= in_end ) {
@@ -202,6 +368,7 @@ void shannonFano( int in_begin, int in_end ) {
      shannonFano( in_begin, highPtr );
      shannonFano( lowPtr, in_end );
 }
+
 void archivingSF(string path){
 
 
@@ -217,10 +384,8 @@ void archivingSF(string path){
     char c;
     int i = 0;
     while (f >> noskipws >> c) {
-        if(i > 2) {
             m[c]++;
             cout << c;
-        }
         i++;
     }
 
@@ -232,63 +397,125 @@ void archivingSF(string path){
         symbol.push_back(*p);
     }
     shannonFano(0, n-1);
-    //printf( "\n\n" );
+    map<char, string> m1;
+
+
     //for_each( symbol.begin(), symbol.end(), printSymbolCode );
-    for(int i = 0; i < symbol.size(); i++){
+    for (int i = 0; i < symbol.size(); i++) {
         char c = symbol.at(i).getSymbol();
         string s = symbol.at(i).getCode();
         vector<bool> arr;
-        for(int i1 = 0; i1 < s.length(); i1++) {
-            if(s[i1] == '1'){
+        for (int i1 = 0; i1 < s.length(); i1++) {
+            if (s[i1] == '1') {
                 arr.push_back(true);
-            }
-            else{
+            } else {
                 arr.push_back(false);
             }
-
         }
         table[c] = arr;
     }
-    ofstream g("output.haff", ios::out | ios::binary);
+    f.clear();
+    f.seekg(0);
+
+    // Utility variable to
+    // control the size of byte
+    int byte_count = 0;
+
+    // Utility variable
+    // to imitate byte
+    char byte = 0;
+
+    ofstream g("output.shan", ios::out | ios::binary);
+    char table_len = (char) table.size();
+    g.write((char *) &table_len, sizeof(char));
     //запись в файл
-    int count=0; char buf=0;
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+        g.write((char*) &itr->first, sizeof(char));
+    }
+
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+        short l = itr->second.size();
+        g.write((char *) &l, sizeof(short));
+    }
+
+    for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
+
+        for (int i = 0; i < itr->second.size(); ++i) {
+
+    // Write the next bit of current
+    // character bin code to the byte
+            byte = byte | itr->second[i] << (7 - byte_count);
+
+    // Mark the next bit as filled
+            ++byte_count;
+
+    // Check if the byte is full
+            if (byte_count == 8) {
+
+    // Write the next byte
+                g.write(&byte, sizeof(char));
+
+    // Clear byte
+                byte = 0;
+                byte_count = 0;
+            }
+        }
+    }
+
+    // Write the
+    // last byte
+    if (byte_count != 0) {
+        for (int i = 0; i < 8 - byte_count; ++i) {
+            byte = byte | 0 << (7 - byte_count);
+        }
+    }
+    int count = 0;
+    char buf = 0;
     // проходимся по файлу f
     while (!f.eof())
         //берем каждый символ из f
-    { char c = f.get();
+    {
+        char c = f.get();
         vector<bool> x = table[c];
-        for(int n=0; n<x.size(); n++)
+        for (int n = 0; n < x.size(); n++)
             // записываем биты в char
-        {buf = buf | x[n]<<(7-count);
+        {
+            buf = buf | x[n] << (7 - count);
             count++;
             //если записали больше 8 то выходим
-            if (count==8) { count=0;   g << buf; buf=0; }
+            if (count == 8) {
+                count = 0;
+                g << buf;
+                buf = 0;
+            }
         }
     }
-    return ;
+
+    return;
 }
 
-int main(int argc, char* argv[]) {
+
+int main(int argc, char *argv[]) {
 
     // поучение параметров из консоли
 
     int i = atoi(argv[1]); // номер метода который нужно вызвать
     string path = argv[2]; // имя файла
+    archivingHof(path);
+    dearchivingHof();
 
-    // выбор метода
-
-    if(i == 1){
+            // выбор метода
+/*
+    if (i == 1) {
         archivingHof(path);
-    }
-    else if(i == 2){
+    } else if (i == 2) {
         archivingSF(path);
-    }
-    else if(i == 3){
+    } else if (i == 3) {
+        dearchivingHof();
+    } else if (i == 4) {
 
     }
-    else if(i == 4){
-
-    }
-
+*/
     return 0;
 }
+
