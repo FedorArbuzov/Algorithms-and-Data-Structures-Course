@@ -27,6 +27,15 @@ using namespace std;
     reverse(result.begin(), result.end());
     return result;
 }
+char VecToCh(vector<bool> arr){
+    char a = 0;
+    for(int i = 0; i < arr.size(); i++){
+        if(arr[i]){
+            a += pow(2, 7-i);
+        }
+    }
+    return a;
+}
 
 SymbolCode::SymbolCode( char in_symbol, int in_frequency ) {
     symbol = in_symbol;
@@ -103,7 +112,7 @@ void archivingHof(string path){
     int i = 0;
     while (f >> noskipws >> c) {
             m[c]++;
-            cout << c;
+           // cout << c;
         i++;
     }
 
@@ -147,33 +156,34 @@ void archivingHof(string path){
     ofstream g("output.haff", ios::out | ios::binary);
     unsigned int table_len = table.size();
     g.write((char *) &table_len, sizeof(unsigned int));
+    g.write((char*) &i, sizeof(int));
     //запись в файл
     for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
         g.write((char*) &itr->first, sizeof(char));
-        cout << itr->first << ' ';
+        //cout << itr->first << ' ';
     }
-    cout << endl;
+    //cout << endl;
     int num_of_bit = 0;
     for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
         short l = itr->second.size();
-        cout << l << ' ';
+        //cout << l << ' ';
         num_of_bit += l;
         g.write((char *) &l, sizeof(short));
     }
-    cout <<num_of_bit << endl;
+    //cout <<num_of_bit << endl;
     vector<bool> vec_of_bool;
     int len_for_vec = (num_of_bit / 8) + ((num_of_bit % 8) > 0 ? 1 : 0);
     vector<char> vec_of_ch(len_for_vec);
     for (map<char, vector<bool> >::iterator itr = table.begin(); itr != table.end(); ++itr) {
 
         for (int i = 0; i < itr->second.size(); ++i) {
-            cout<< itr->second[i];
+            //cout<< itr->second[i];
             vec_of_bool.push_back(itr->second[i]);
 
         }
     }
-    cout << endl;
-    cout << vec_of_ch.size() << endl;
+    //cout << endl;
+    //cout << vec_of_ch.size() << endl;
     int flag = 0;
     char tb = 0;
     vector<bool> ch(8, false);
@@ -182,7 +192,7 @@ void archivingHof(string path){
         flag++;
         if(flag == 8){
             for(int i1 = 0; i1 < 8; i1++){
-                cout << ch[i1];
+                //cout << ch[i1];
                 int num = 0;
                 if(ch[i1]){
                     num = 1;
@@ -192,7 +202,7 @@ void archivingHof(string path){
                 }
                 tb += num * pow(2, 7-i1);
             };
-            cout << ' ' << tb << ' ';
+            //cout << ' ' << tb << ' ';
             g.write((char*) &tb, sizeof(char));
             flag = 0;
             ch = vector<bool>(8, false);
@@ -202,7 +212,7 @@ void archivingHof(string path){
     }
     if(flag != 0){
         for(int i = 0; i < ch.size(); i++){
-            cout << ch[i];
+            //cout << ch[i];
             int num = 0;
             if(ch[i]){
                 num = 1;
@@ -212,58 +222,74 @@ void archivingHof(string path){
             }
             tb += num * pow(2, 7-i);
         }
-        cout << ' ' << tb << ' ';
+        //cout << ' ' << tb << ' ';
         g.write((char*) &tb, sizeof(char));
     }
-    /*
+
     int count = 0;
     char buf = 0;
     // проходимся по файлу f
+    //cout << !f.eof();
+    vector<bool> char_new(8, false);
     while (!f.eof())
         //берем каждый символ из f
     { char c = f.get();
+        //cout << c;
         vector<bool> x = table[c];
         for(int n=0; n<x.size(); n++)
             // записываем биты в char
-        {buf = buf | (x[n]=='1'?1:0)<<(7-count);
+        {
+            char_new[count] = x[n];
             count++;
-            //если записали больше 8 то выходим
-            if (count==8) { count=0;   g << buf; buf=0; }
+            if(count == 8){
+                for(int i = 0; i < char_new.size(); i++){
+                    //cout << char_new[i];
+                }
+                char vrem = VecToCh(char_new);
+                g.write((char*) &vrem, sizeof(char));
+                //cout << ' ' << int(VecToCh(char_new)) << ' ' << VecToCh(char_new) << endl;
+                count = 0;
+                char_new = vector<bool>(8, false);
+            }
         }
     }
-    cout<< endl;
+    if(count != 0){
+        char vrem = VecToCh(char_new);
+        g.write((char*) &vrem, sizeof(char));
+    }
+    //cout<< endl;
 
-    // Write the
-    // last byte
-    if (byte_count != 0) {
-        for (int i = 0; i < 8 - byte_count; ++i) {
-            byte = byte | 0 << (7 - byte_count);
-        }
-        g.write(&byte, sizeof(char));
-    }
-     */
+
     f.close();
     g.close();
-
+    ifstream g1("output.haff", ios::in);
+    char td = 0;
+    //while(!g1.eof()){g1.read((char*)&td, sizeof(char)); cout << td;}
     return ;
 }
 
 void dearchivingHof(){
-    ifstream f ("output.haff", ios::binary);
+    ifstream g1("output.haff", ios::in);
+    char td = 0;
+    //while(!g1.eof()){g1.read((char*)&td, sizeof(char)); cout << td;}
+    g1.close();
+    ifstream f ("output.haff",  ios::in);
     unsigned int len;
-    map<char, vector<bool>> m;
     f.read((char*)&len, sizeof(unsigned int));
-    cout << endl;
-    cout << len << endl;
+    int num_of_ch;
+    f.read((char*)&num_of_ch, sizeof(int));
+    cout << num_of_ch << endl;
+    //cout << endl;
+    //cout << len << endl;
     vector<char> all_ch;
     for(int i = 0; i < len; i++){
         char c;
         f.read((char*)&c, sizeof(char));
-        cout << c << ' ';
+        //cout << c << ' ';
         all_ch.push_back(c);
 
     }
-    cout << endl;
+    //cout << endl;
     long num_of_b = 0;
     vector<short> len_of_codes;
     for(int i = 0; i < len; i++){
@@ -271,9 +297,9 @@ void dearchivingHof(){
         f.read((char*)&s, sizeof(short));
         len_of_codes.push_back(s);
         num_of_b += s;
-        cout<< s << ' ';
+        //cout<< s << ' ';
     }
-    cout << endl;
+    //cout << endl;
     int len_for_vec = (num_of_b / 8) + ((num_of_b % 8) > 0 ? 1 : 0);
     vector<char> vec_of_ch(len_for_vec);
     for(int i = 0; i < len_for_vec; i++){
@@ -281,29 +307,29 @@ void dearchivingHof(){
     }
     vector<bool> vec_all_b;
     for(int i = 0; i < len_for_vec; i++){
-        cout << vec_of_ch[i] << ' ';
+        //cout << vec_of_ch[i] << ' ';
         int num_of_ch = +vec_of_ch[i];
         if(num_of_ch > 0){
-            cout << num_of_ch << ' ';
+            //cout << num_of_ch << ' ';
             vector<bool> arr = DecToBin(num_of_ch);
             for(int i1 = 0; i1 < arr.size(); i1++){
-                cout << arr[i1];
+              //  cout << arr[i1];
                 vec_all_b.push_back(arr[i1]);
             }
         }
         else{
-            cout << 256 + num_of_ch << ' ';
+            //cout << 256 + num_of_ch << ' ';
             vector<bool> arr = DecToBin(256 + num_of_ch);
             for(int i1 = 0; i1 < arr.size(); i1++){
-                cout << arr[i1];
+          //      cout << arr[i1];
                 vec_all_b.push_back(arr[i1]);
             }
         }
-        cout << endl;
+        //cout << endl;
 
     }
     for(int i = 0; i < vec_all_b.size(); i++){
-        cout << vec_all_b[i];
+      //  cout << vec_all_b[i];
     }
     vector<vector<bool> > all_codes;
     for(int i = 0; i < len_of_codes.size(); i++){
@@ -315,16 +341,73 @@ void dearchivingHof(){
         }
         all_codes.push_back(arr);
     }
-    cout << endl;
+    //cout << endl;
     for(int i = 0; i < all_codes.size(); i++)
     {
-        cout << all_ch[i] << ' ';
-        cout << all_codes[i].size() << ' ';
+        //cout << all_ch[i] << ' ';
+        //cout << all_codes[i].size() << ' ';
         for(int i1 = 0; i1 < all_codes[i].size(); i1++){
-            cout << all_codes[i][i1];
+            //cout << all_codes[i][i1];
         }
-        cout << endl;
+        //cout << endl;
     }
+    vector<char> text;
+    vector<bool> all_text;
+    char tb = 0;
+    while(!f.eof()){f.read((char*)&tb, sizeof(char)); text.push_back(tb);}
+    //cout << text.size();
+    for(int i = 0; i < text.size() - 1; i++ ){
+        //cout << ' ' << text[i] << ' ';
+        int num_of_ch =int(text[i]);
+        //cout << ' ' << num_of_ch << ' ';
+        if(num_of_ch > 0){
+            //cout << ' ' << num_of_ch << ' ';
+            vector<bool> arr = DecToBin(num_of_ch);
+            for(int i1 = 0; i1 < arr.size(); i1++){
+                  //cout << arr[i1];
+                    all_text.push_back(arr[i1]);
+                //vec_all_b.push_back(arr[i1]);
+            }
+        }
+        else{
+            //cout << 256 + num_of_ch << ' ';
+            vector<bool> arr = DecToBin(256 + num_of_ch);
+            for(int i1 = 0; i1 < arr.size(); i1++){
+                      //cout << arr[i1];
+                all_text.push_back(arr[i1]);
+                //vec_all_b.push_back(arr[i1]);
+            }
+        }
+    }
+    vector<bool> vrem;
+    int k = 0;
+    while(all_text.size() != 0 && k != num_of_ch){
+        vrem.push_back(all_text[0]);
+        all_text.erase(all_text.begin());
+        for(int i = 0; i < all_codes.size(); i++){
+            if(vrem == all_codes[i]){
+                cout << all_ch[i];
+                k++;
+                vrem.clear();
+            }
+        }
+    }
+    /*
+    char tb = 0;
+    f.read((char*)&tb, sizeof(char));
+    cout << tb;
+    f.read((char*)&tb, sizeof(char));
+    cout << tb;
+    f.read((char*)&tb, sizeof(char));
+    cout << tb;
+     */
+    f.clear();
+    f.seekg(0);
+    //cout << "text";
+    //cout << f.eof();
+    //if(f.eof()){cout << "End of file!";};
+    char c = 0;
+    //while(!f.eof()){f.read((char*)&c, sizeof(char)); cout << c;}
     return ;
 }
 
