@@ -8,15 +8,15 @@ using namespace std;
  */
 class SymbolCode {
 private:
-     char symbol;
-     int frequency;
-     string code;
+     char sym;
+     int freq;
+     string cd;
 public:
      SymbolCode( char in_symbol, int in_frequency );
-     char getSymbol( void );
-     int getFrequency( void );
-     string getCode( void );
-     void addCode( string in_code );
+     char getSym(void);
+     int getFreq(void);
+     string getCd(void);
+     void addCd(string in_code);
 };
 
 
