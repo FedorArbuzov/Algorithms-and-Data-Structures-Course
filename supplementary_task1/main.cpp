@@ -6,8 +6,8 @@ using namespace std;
 
 int main() {
 
-    vector<int> x, y, u, v, a, b;
-    int i, j, n;
+    //два вектора для левого и правого берегов
+    vector<int> left_coast, right_coast;
 
     // подключение файлов
     ifstream ifl("input.txt");
@@ -15,74 +15,56 @@ int main() {
 
     // получение строки из файла
     string s;
-    cin >> s;
+    ifl >> s;
+    ifl.close();
 
     //число переправ до кажого участка на л. б.
-    x.push_back(0);
+    left_coast.push_back(0);
     //число переправ до кажого участка на п. б.
-    y.push_back(1);
-    //предыдущий отрезок на л. б. до этого отрезка без притоков
-    u.push_back(0);
-    //предыдущий отрезок на п. б. до этого отрезка без притоков
-    v.push_back(0);
+    right_coast.push_back(1);
 
-    i = 1;
+
+    // цикл для прохода по всему списку притоков
     for(int i = 1; i <= s.length(); i++){
+
+        // получение конкретной переправы
         char c = s[i-1];
 
-        x.push_back(x[i - 1]);
-        y.push_back(y[i - 1]);
-        u.push_back(u[i - 1]);
-        v.push_back(v[i - 1]);
+        // заполнение дефолтными значениями
+        left_coast.push_back(left_coast[i - 1]);
+        right_coast.push_back(right_coast[i - 1]);
+
+        // если есть левый приток
         if(c == 'L'){
-            x[i] = x[i - 1] + 1;
-            y[i] = y[i - 1];
+            left_coast[i] = left_coast[i - 1] + 1;
+            right_coast[i] = right_coast[i - 1];
         }
+
+        //  если есть правый приток
         else if(c == 'R'){
-            x[i] = x[i - 1];
-            y[i] = y[i - 1] + 1;
+            left_coast[i] = left_coast[i - 1];
+            right_coast[i] = right_coast[i - 1] + 1;
         }
+
+        // если есть оба притока
         else{
-            x[i] = x[i - 1] + 1;
-            y[i] = y[i - 1] + 1;
+            left_coast[i] = left_coast[i - 1] + 1;
+            right_coast[i] = right_coast[i - 1] + 1;
         }
-        if(x[i] + 1 < y[i]){
-            y[i] = x[i] + 1;
+
+        // если на правый берег выгодно попасть из левого
+        if(left_coast[i] + 1 < right_coast[i]){
+            right_coast[i] = left_coast[i] + 1;
         }
-        if(y[i] + 1 < x[i]){
-            x[i] = y[i] + 1;
+
+        // если на левый берег выгодно попасть из правого
+        if(right_coast[i] + 1 < left_coast[i]){
+            left_coast[i] = right_coast[i] + 1;
         }
-/*
-        if(c == 'L'){
-            x[i] = x[u[i - 1]] + 1;
-            u[i] = i;
-        }
-        else if(c == 'R'){
-            y[i] = y[v[i - 1]] + 1;
-            v[i] = i;
-        }
-        else{
-            x[i] = x[u[i - 1]] + 1;
-            y[i] = y[v[i - 1]] + 1;
-            u[i] = i;
-            v[i] = i;
-        }
-        if(x[i - 1] == 0){
-            x[i] = 1;
-        }
-        if(y[i - 1] == 1){
-            y[i] = 2;
-        }
-        if(x[i] + 1 < y[i]){
-            y[i] = x[i] + 1;
-        }
-        if(y[i] + 1 < x[i]){
-            x[i] = y[i] + 1;
-        }
-        */
     }
 
-    cout << y[s.length()];
-    //std::cout << "Hello, World!" << std::endl;
+    // вывод минимаоьного числа переправ
+    ofl << right_coast[s.length()];
+    ofl.close();
     return 0;
 }
